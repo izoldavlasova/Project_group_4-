@@ -3,10 +3,10 @@ library(httr)
 library(ggplot2)
 library(janitor)
 library(tidyverse)
-
+library(rjstat)
+library(tidyr)
 
 # henter rjstat bibliotek for behandling av JSON-stat
-library(rjstat)
 url <- "https://data.ssb.no/api/v0/no/table/06464/"
 
 
@@ -203,19 +203,12 @@ data <- '
 '
 d.tmp <- POST(url , body = data, encode = "json", verbose())
 
-
-
 # Henter ut innholdet fra d.tmp som tekst deretter bearbeides av fromJSONstat
 avtalte_arsverk <- fromJSONstat(content(d.tmp, "text"))
 
 options(encoding="UTF-8")
-library(httr)
-library(tidyr)
-
-
 
 # henter rjstat bibliotek for behandling av JSON-stat
-library(rjstat)
 url <- "https://data.ssb.no/api/v0/no/table/06922/"
 
 
@@ -275,12 +268,8 @@ data <- '
 '
 d.tmp <- POST(url , body = data, encode = "json", verbose())
 
-
-
 # Henter ut innholdet fra d.tmp som tekst deretter bearbeides av fromJSONstat
 ssb_data <- fromJSONstat(content(d.tmp, "text"))
-
-
 
 # Viser datasettet
 ssb_data
@@ -307,6 +296,25 @@ dognplasser <- dognplasser %>%
   select(region, ar, value)
 driftskostander <- driftskostander %>% 
   select(region, ar, value)
+
+# Population per health region 
+sor_ost_pop <- 3.1 
+nord_pop <- 0.5 
+vest_pop <- 1.1 
+midt_pop <- 0.687 
+
+# Deviding the man-years by population 
+avtalte_arsverk <- avtalte_arsverk %>% 
+  mutate(value = ifelse(region == "Helseregion Sør-Øst (2007-)", value/sor_ost_pop, value))
+
+avtalte_arsverk <- avtalte_arsverk %>% 
+  mutate(value = ifelse(region == "Helseregion Vest", value/vest_pop, value))
+
+avtalte_arsverk <- avtalte_arsverk %>% 
+  mutate(value = ifelse(region == "Helseregion Midt-Norge", value/midt_pop, value))
+
+avtalte_arsverk <- avtalte_arsverk %>% 
+  mutate(value = ifelse(region == "Helseregion Nord", value/nord_pop, value))
 
 
 # Merge the data 
@@ -341,15 +349,22 @@ ggplot(merged_data, aes(x = value_arsverk, y = oppholdsdogn, group = region)) +
   geom_point() + 
   facet_grid(vars(region))
 
-
 # Helse Sør-Øst has the highest population - around 3.1 million people (source: https://helse-sorost.no/om-oss/vart-oppdrag/hva-har-vi-gjort/nokkeltall)
-# Helse Nord has population of around 0.5 millim people (source: https://helse-nord.no/om-oss/hva-gjor-helse-nord-rhf/nokkeltall)
+# Helse Nord has population of around 0.5 million people (source: https://helse-nord.no/om-oss/hva-gjor-helse-nord-rhf/nokkeltall)
 # Helse Vest has population of around 1.1 million people (source: https://helse-vest.no/om-oss/nokkeltal)
 # Helse Midt-Norge has population of around 0.687 million people 
 
-# Ideas: devide the man-years by population given above 
+# Ideas: devide the man-years by population given above: conditional mutation (done)
 # Interactive visualisations with plotly 
 # merge data from Helsedirektoratet 
+
+
+
+
+
+
+
+
 
 
 
